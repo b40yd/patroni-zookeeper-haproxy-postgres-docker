@@ -1,0 +1,52 @@
+version: "3.1"
+
+services:
+  haproxy:
+    build:
+      context: .
+      dockerfile: haproxy/Dockerfile
+    restart: always
+    container_name: haproxy
+    ports:
+      - 5432:5432
+      - 7000:7000
+    depends_on:
+      - zoo1
+      - pg-test-1
+      - pg-test-2
+
+  zoo1:
+    image: zookeeper:latest
+    hostname: zoo1
+    container_name: zoo1
+    restart: always
+    ports:
+      - "2181:2181"
+
+  pg-test-1:
+    build:
+      context: .
+      dockerfile: postgres/Dockerfile
+    restart: always
+    hostname: pg-test-1
+    container_name: pg-test-1
+    depends_on:
+      - zoo1
+    expose:
+      - 5432
+      - 8008
+    command: su - postgres -c 'python3 -m patroni /postgres0.yml'
+
+  pg-test-2:
+    build:
+      context: .
+      dockerfile: postgres/Dockerfile
+    restart: always
+    hostname: pg-test-2
+    container_name: pg-test-2
+    depends_on:
+      - zoo1
+    expose:
+      - 5432
+      - 8008
+    command: su - postgres -c 'python3 -m patroni /postgres1.yml'
